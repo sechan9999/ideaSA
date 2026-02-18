@@ -24,8 +24,15 @@ class RefineAgent:
         # Merge refined data
         if isinstance(refined_data, dict):
             idea.description += f"\n\n## Refinement\n{refined_data.get('expanded_description', '')}"
-            idea.market_score = refined_data.get('market_validation_points', 0) if isinstance(refined_data.get('market_validation_points'), (int, float)) else 0
-            idea.tech_score = refined_data.get('feasibility_notes', 0) if isinstance(refined_data.get('feasibility_notes'), (int, float)) else 0
+            try:
+                idea.market_score = float(refined_data.get('market_validation_points', 0))
+            except (ValueError, TypeError):
+                idea.market_score = 0.0
+                
+            try:
+                idea.tech_score = float(refined_data.get('feasibility_notes', 0))
+            except (ValueError, TypeError):
+                idea.tech_score = 0.0
             idea.status = "refined"
             
         return idea

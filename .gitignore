@@ -5,6 +5,8 @@ backend/__pycache__
 backend/artifacts/*.pdf
 backend/artifacts/*.mp4
 backend/.env
+**/__pycache__/
+*.pyc
 
 # Frontend
 frontend/.next

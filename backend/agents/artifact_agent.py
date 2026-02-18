@@ -20,10 +20,13 @@ class ArtifactAgent:
         Generates a PDF proposal for the idea.
         """
         filename = f"{idea.id}_proposal.pdf"
-        filepath = os.path.join("artifacts", filename)
+        # Match ARTIFACTS_DIR in main.py
+        base_path = os.path.dirname(os.path.abspath(__file__)) # agents/
+        artifacts_path = os.path.join(base_path, "..", "artifacts") # backend/artifacts
+        filepath = os.path.join(artifacts_path, filename)
         
         # Ensure artifacts dir exists
-        os.makedirs("artifacts", exist_ok=True)
+        os.makedirs(artifacts_path, exist_ok=True)
         
         try:
             c = canvas.Canvas(filepath, pagesize=letter)
@@ -61,7 +64,7 @@ class ArtifactAgent:
                 y -= 15
                 
             c.save()
-            return filepath
+            return f"http://localhost:8000/artifacts/{filename}"
         except Exception as e:
             print(f"PDF Generation failed: {e}")
             return "error_generating_pdf.pdf"

@@ -3,8 +3,11 @@
 import { useState } from 'react';
 
 // Premium Glass Card Component
-export default function IdeaCard({ idea, onRefine, onEvaluate, onConvert, index }) {
+export default function IdeaCard({ idea, onRefine, onEvaluate, onConvert, onUpdate, index }) {
     const [loading, setLoading] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
+    const [editTitle, setEditTitle] = useState(idea.title);
+    const [editDesc, setEditDesc] = useState(idea.description);
 
     // Status Badge Colors
     const statusColor = {
@@ -31,6 +34,18 @@ export default function IdeaCard({ idea, onRefine, onEvaluate, onConvert, index 
         onConvert(idea.id, type).finally(() => setLoading(false));
     };
 
+    const handleSave = async () => {
+        setLoading(true);
+        try {
+            await onUpdate(idea.id, { title: editTitle, description: editDesc });
+            setIsEditing(false);
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div className="glass-card flex flex-col h-full relative overflow-hidden group">
             {/* Background Gradient Effect on Hover */}
@@ -41,22 +56,64 @@ export default function IdeaCard({ idea, onRefine, onEvaluate, onConvert, index 
                 <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${currentStatusStyle}`}>
                     {idea.status.toUpperCase()}
                 </span>
-                {idea.total_score > 0 && (
-                    <div className="flex items-center gap-1 text-accent font-bold">
-                        ★ {idea.total_score.toFixed(1)}
-                    </div>
-                )}
+                <div className="flex gap-2">
+                    {!isEditing && (
+                        <button
+                            onClick={() => {
+                                setEditTitle(idea.title);
+                                setEditDesc(idea.description);
+                                setIsEditing(true);
+                            }}
+                            className="text-gray-400 hover:text-white text-xs underline"
+                        >
+                            Edit
+                        </button>
+                    )}
+                    {idea.total_score > 0 && (
+                        <div className="flex items-center gap-1 text-accent font-bold">
+                            ★ {idea.total_score.toFixed(1)}
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* Main Content */}
-            <h3 className="text-xl font-bold mb-2 text-white group-hover:text-primary transition-colors">
-                {idea.title}
-            </h3>
-            <div className="text-gray-400 text-sm mb-4 flex-grow" style={{ whiteSpace: 'pre-line' }}>
-                {idea.status === 'seed'
-                    ? idea.description.substring(0, 150) + '...'
-                    : idea.description}
-            </div>
+            {isEditing ? (
+                <div className="mb-4 relative z-20">
+                    <input
+                        type="text"
+                        value={editTitle}
+                        onChange={(e) => setEditTitle(e.target.value)}
+                        className="input-field mb-2 font-bold"
+                        placeholder="Idea Title"
+                    />
+                    <textarea
+                        value={editDesc}
+                        onChange={(e) => setEditDesc(e.target.value)}
+                        className="input-field min-h-[150px] font-mono text-sm"
+                        placeholder="Description..."
+                    />
+                    <div className="flex gap-2 mt-2">
+                        <button onClick={handleSave} disabled={loading} className="btn text-xs py-1 px-3">
+                            {loading ? 'Saving...' : 'Save'}
+                        </button>
+                        <button onClick={() => setIsEditing(false)} disabled={loading} className="btn btn-secondary text-xs py-1 px-3">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            ) : (
+                <>
+                    <h3 className="text-xl font-bold mb-2 text-white group-hover:text-primary transition-colors">
+                        {idea.title}
+                    </h3>
+                    <div className="text-gray-400 text-sm mb-4 flex-grow" style={{ whiteSpace: 'pre-line' }}>
+                        {idea.status === 'seed'
+                            ? idea.description.substring(0, 150) + '...'
+                            : idea.description}
+                    </div>
+                </>
+            )}
 
             {/* Origin Badge */}
             <div className="text-xs text-gray-500 mb-4 font-mono">
@@ -93,46 +150,48 @@ export default function IdeaCard({ idea, onRefine, onEvaluate, onConvert, index 
             )}
 
             {/* Actions */}
-            <div className="mt-auto flex gap-2 relative z-10">
-                {idea.status === 'seed' && (
-                    <button
-                        onClick={handleRefine}
-                        disabled={loading}
-                        className="w-full btn text-sm justify-center"
-                    >
-                        {loading ? 'Refining...' : 'Refine Idea ✨'}
-                    </button>
-                )}
-
-                {idea.status === 'refined' && (
-                    <button
-                        onClick={handleEvaluate}
-                        disabled={loading}
-                        className="w-full btn btn-secondary text-sm justify-center border-primary text-primary hover:bg-primary hover:text-white"
-                    >
-                        {loading ? 'Reviewing...' : 'Evaluate ⚖️'}
-                    </button>
-                )}
-
-                {idea.status === 'evaluated' && (
-                    <div className="flex gap-2 w-full">
+            {!isEditing && (
+                <div className="mt-auto flex gap-2 relative z-10">
+                    {idea.status === 'seed' && (
                         <button
-                            onClick={() => handleConvert('pdf')}
+                            onClick={handleRefine}
                             disabled={loading}
-                            className="flex-1 btn btn-secondary text-xs justify-center"
+                            className="w-full btn text-sm justify-center"
                         >
-                            PDF 📄
+                            {loading ? 'Refining...' : 'Refine Idea ✨'}
                         </button>
+                    )}
+
+                    {idea.status === 'refined' && (
                         <button
-                            onClick={() => handleConvert('video')}
+                            onClick={handleEvaluate}
                             disabled={loading}
-                            className="flex-1 btn btn-secondary text-xs justify-center"
+                            className="w-full btn btn-secondary text-sm justify-center border-primary text-primary hover:bg-primary hover:text-white"
                         >
-                            Video 🎥
+                            {loading ? 'Reviewing...' : 'Evaluate ⚖️'}
                         </button>
-                    </div>
-                )}
-            </div>
+                    )}
+
+                    {idea.status === 'evaluated' && (
+                        <div className="flex gap-2 w-full">
+                            <button
+                                onClick={() => handleConvert('pdf')}
+                                disabled={loading}
+                                className="flex-1 btn btn-secondary text-xs justify-center"
+                            >
+                                PDF 📄
+                            </button>
+                            <button
+                                onClick={() => handleConvert('video')}
+                                disabled={loading}
+                                className="flex-1 btn btn-secondary text-xs justify-center"
+                            >
+                                Video 🎥
+                            </button>
+                        </div>
+                    )}
+                </div>
+            )}
         </div>
     );
 }

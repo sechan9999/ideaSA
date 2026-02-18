@@ -4,8 +4,22 @@ import { useState } from 'react';
 import IdeaCard from '../components/IdeaCard';
 
 export default function Home() {
+  interface Idea {
+    id: string;
+    title: string;
+    description: string;
+    status: string;
+    origin_trend: string;
+    market_score?: number;
+    tech_score?: number;
+    novelty_score?: number;
+    total_score?: number;
+    artifacts?: { [key: string]: string };
+    [key: string]: any;
+  }
+
   const [topic, setTopic] = useState('');
-  const [ideas, setIdeas] = useState([]);
+  const [ideas, setIdeas] = useState<Idea[]>([]);
   const [loading, setLoading] = useState(false);
   const [stage, setStage] = useState('input'); // input, seeds, refining, evaluating
 
@@ -28,7 +42,7 @@ export default function Home() {
     }
   };
 
-  const refineIdea = async (ideaId) => {
+  const refineIdea = async (ideaId: string) => {
     try {
       const res = await fetch(`${API_BASE}/workflow/refine/${ideaId}`, { method: 'POST' });
       const refined = await res.json();
@@ -39,7 +53,7 @@ export default function Home() {
     }
   };
 
-  const evaluateIdea = async (ideaId) => {
+  const evaluateIdea = async (ideaId: string) => {
     try {
       const res = await fetch(`${API_BASE}/workflow/evaluate/${ideaId}`, { method: 'POST' });
       const evaluated = await res.json();
@@ -49,12 +63,52 @@ export default function Home() {
     }
   };
 
-  const convertIdea = async (ideaId, type) => {
+  const updateIdea = async (ideaId: string, updates: Partial<Idea>) => {
+    try {
+      const res = await fetch(`${API_BASE}/ideas/${ideaId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates)
+      });
+
+      if (!res.ok) {
+        if (res.status === 404) {
+          throw new Error("Idea not found. It may have been deleted.");
+        } else {
+          try {
+            const errData = await res.json();
+            throw new Error(errData.detail || `Failed to update: ${res.statusText}`);
+          } catch (jsonErr) {
+            throw new Error(`Failed to update: ${res.statusText}`);
+          }
+        }
+      }
+
+      const updated = await res.json();
+      setIdeas(prev => prev.map(i => i.id === ideaId ? updated : i));
+    } catch (e: any) {
+      console.error(e);
+      alert(e.message || "Failed to save changes. Please try again.");
+    }
+  };
+
+  const convertIdea = async (ideaId: string, type: string) => {
     try {
       const res = await fetch(`${API_BASE}/workflow/artifact/${ideaId}?artifact_type=${type}`, { method: 'POST' });
-      const url = await res.json();
+      const data = await res.json();
+      const url = data.url;
+
+      // Update local state so the UI reflects the new artifact
+      setIdeas(prev => prev.map(i => {
+        if (i.id === ideaId) {
+          const updatedArtifacts = { ...i.artifacts, [type]: url };
+          return { ...i, artifacts: updatedArtifacts };
+        }
+        return i;
+      }));
+
       // Artifact URL handled inside card via status update or just alert
-      alert(`Artifact Generated: ${url.url}`);
+      // alert(`Artifact Generated: ${url}`);
     } catch (e) {
       console.error(e);
     }
@@ -114,6 +168,7 @@ export default function Home() {
                   onRefine={refineIdea}
                   onEvaluate={evaluateIdea}
                   onConvert={convertIdea}
+                  onUpdate={updateIdea}
                   index={idx}
                 />
               </div>
