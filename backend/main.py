@@ -59,27 +59,28 @@ async def get_all_ideas():
 @app.post("/workflow/start", response_model=List[Idea])
 async def start_workflow(topic: str):
     """
-    Step 1: Trend Collection -> Step 2: Seed Generation (Batch)
+    Step 1: Trend Collection → Step 2: Seed Generation → Step 2b: Deduplication
     """
-    # 1. Trend Collection
+    global IDEAS_DB
+
+    # 1. Trend Collection (real papers from OpenAlex + patents)
     context = await trend_agent.collect_trends(topic)
-    
-    # 2. Seed Generation (Batch + Verbalized Sampling)
+
+    # 2. Seed Generation (Verbalized Sampling: 3 strategic directions)
     seeds = await seed_agent.generate_seeds(context, count=5)
-    
-    # Check for duplicates immediately? Or later?
-    # Let's clean and store them.
-    # Let's clean and store them.
-    for seed in seeds:
+
+    # 2b. Embedding-based deduplication
+    unique_seeds = embedding_service.deduplicate(seeds)
+
+    for seed in unique_seeds:
         IDEAS_DB[seed.id] = seed
-    
+
     try:
         db_service.save_ideas(IDEAS_DB)
     except Exception as e:
-        # If save fails, we should alert.
         raise HTTPException(status_code=500, detail=f"Database save failed: {str(e)}")
-        
-    return seeds
+
+    return unique_seeds
 
 @app.patch("/ideas/{idea_id}", response_model=Idea)
 async def update_idea(idea_id: str, idea_update: IdeaUpdate):
