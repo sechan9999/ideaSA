@@ -1,0 +1,19 @@
+
+# Backend
+backend/.venv
+backend/__pycache__
+backend/artifacts/*.pdf
+backend/artifacts/*.mp4
+backend/.env
+
+# Frontend
+frontend/.next
+frontend/node_modules
+frontend/.env
+frontend/out
+frontend/build
+
+# IDE
+.vscode
+.idea
+*.log
