@@ -64,6 +64,12 @@ export default function Home() {
   };
 
   const updateIdea = async (ideaId: string, updates: Partial<Idea>) => {
+    // Save original for rollback
+    const originalIdea = ideas.find(i => i.id === ideaId);
+
+    // Optimistic update
+    setIdeas(prev => prev.map(i => i.id === ideaId ? { ...i, ...updates } : i));
+
     try {
       const res = await fetch(`${API_BASE}/ideas/${ideaId}`, {
         method: 'PATCH',
@@ -72,22 +78,24 @@ export default function Home() {
       });
 
       if (!res.ok) {
-        if (res.status === 404) {
-          throw new Error("Idea not found. It may have been deleted.");
-        } else {
-          try {
-            const errData = await res.json();
-            throw new Error(errData.detail || `Failed to update: ${res.statusText}`);
-          } catch (jsonErr) {
-            throw new Error(`Failed to update: ${res.statusText}`);
-          }
+        let errorMsg = `Failed to update: ${res.statusText}`;
+        try {
+          const errData = await res.json();
+          errorMsg = errData.detail || errorMsg;
+        } catch {
+          // ignore JSON parse failure
         }
+        throw new Error(errorMsg);
       }
 
       const updated = await res.json();
-      setIdeas(prev => prev.map(i => i.id === ideaId ? updated : i));
+      setIdeas(prev => prev.map(i => i.id === ideaId ? { ...i, ...updated } : i));
     } catch (e: any) {
       console.error(e);
+      // Revert to original on failure
+      if (originalIdea) {
+        setIdeas(prev => prev.map(i => i.id === ideaId ? originalIdea : i));
+      }
       alert(e.message || "Failed to save changes. Please try again.");
     }
   };

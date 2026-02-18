@@ -10,6 +10,7 @@ from agents.eval_agent import EvalAgent
 from agents.artifact_agent import ArtifactAgent
 from services.embedding_service import EmbeddingService
 import asyncio
+from datetime import datetime
 
 from services.db_service import DBService
 
@@ -82,19 +83,20 @@ async def start_workflow(topic: str):
 
 @app.patch("/ideas/{idea_id}", response_model=Idea)
 async def update_idea(idea_id: str, idea_update: IdeaUpdate):
+    global IDEAS_DB
     if idea_id not in IDEAS_DB:
         # Reload just in case
-        global IDEAS_DB
         IDEAS_DB = db_service.load_ideas()
         if idea_id not in IDEAS_DB:
             raise HTTPException(status_code=404, detail="Idea not found")
-    
+
     idea = IDEAS_DB[idea_id]
-    if idea_update.title:
+    if idea_update.title is not None:
         idea.title = idea_update.title
-    if idea_update.description:
+    if idea_update.description is not None:
         idea.description = idea_update.description
-        
+    idea.updated_at = datetime.now()
+
     IDEAS_DB[idea_id] = idea
     db_service.save_ideas(IDEAS_DB)
     return idea
@@ -104,12 +106,12 @@ async def refine_idea(idea_id: str):
     """
     Step 3: Refinement (Multilingual Prompting + Multi-perspective)
     """
+    global IDEAS_DB
     if idea_id not in IDEAS_DB:
-        global IDEAS_DB
         IDEAS_DB = db_service.load_ideas()
         if idea_id not in IDEAS_DB:
             raise HTTPException(status_code=404, detail="Idea not found")
-    
+
     idea = IDEAS_DB[idea_id]
     refined_idea = await refine_agent.refine(idea)
     
@@ -123,12 +125,12 @@ async def evaluate_idea(idea_id: str):
     """
     Step 4: Evaluation (Reviewer Agents) & Leaderboard Scoring
     """
+    global IDEAS_DB
     if idea_id not in IDEAS_DB:
-        global IDEAS_DB
         IDEAS_DB = db_service.load_ideas()
         if idea_id not in IDEAS_DB:
             raise HTTPException(status_code=404, detail="Idea not found")
-        
+
     idea = IDEAS_DB[idea_id]
     evaluated_idea = await eval_agent.evaluate(idea)
     
@@ -141,12 +143,12 @@ async def generate_artifact(idea_id: str, artifact_type: str = "pdf"):
     """
     Step 5: Generate PDF/Video
     """
+    global IDEAS_DB
     if idea_id not in IDEAS_DB:
-        global IDEAS_DB
         IDEAS_DB = db_service.load_ideas()
         if idea_id not in IDEAS_DB:
             raise HTTPException(status_code=404, detail="Idea not found")
-        
+
     idea = IDEAS_DB[idea_id]
     url = await artifact_agent.generate(idea, artifact_type)
     

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 // Premium Glass Card Component
 export default function IdeaCard({ idea, onRefine, onEvaluate, onConvert, onUpdate, index }) {
@@ -8,6 +8,12 @@ export default function IdeaCard({ idea, onRefine, onEvaluate, onConvert, onUpda
     const [isEditing, setIsEditing] = useState(false);
     const [editTitle, setEditTitle] = useState(idea.title);
     const [editDesc, setEditDesc] = useState(idea.description);
+
+    // Sync edit state when idea prop changes (e.g. after refine/evaluate)
+    useEffect(() => {
+        setEditTitle(idea.title);
+        setEditDesc(idea.description);
+    }, [idea.title, idea.description]);
 
     // Status Badge Colors
     const statusColor = {
