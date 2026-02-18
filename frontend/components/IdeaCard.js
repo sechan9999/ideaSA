@@ -35,9 +35,9 @@ export default function IdeaCard({ idea, onRefine, onEvaluate, onConvert, onUpda
         onEvaluate(idea.id).finally(() => setLoading(false));
     };
 
-    const handleConvert = (type) => {
+    const handleConvert = () => {
         setLoading(true);
-        onConvert(idea.id, type).finally(() => setLoading(false));
+        onConvert(idea.id).finally(() => setLoading(false));
     };
 
     const handleSave = async () => {
@@ -179,22 +179,13 @@ export default function IdeaCard({ idea, onRefine, onEvaluate, onConvert, onUpda
                     )}
 
                     {idea.status === 'evaluated' && (
-                        <div className="flex gap-2 w-full">
-                            <button
-                                onClick={() => handleConvert('pdf')}
-                                disabled={loading}
-                                className="flex-1 btn btn-secondary text-xs justify-center"
-                            >
-                                PDF 📄
-                            </button>
-                            <button
-                                onClick={() => handleConvert('video')}
-                                disabled={loading}
-                                className="flex-1 btn btn-secondary text-xs justify-center"
-                            >
-                                Video 🎥
-                            </button>
-                        </div>
+                        <button
+                            onClick={handleConvert}
+                            disabled={loading}
+                            className="w-full btn btn-secondary text-sm justify-center border-accent/30 text-accent hover:bg-accent hover:text-white"
+                        >
+                            {loading ? 'Generating...' : 'Export PDF 📄'}
+                        </button>
                     )}
                 </div>
             )}

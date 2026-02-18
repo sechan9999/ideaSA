@@ -100,23 +100,18 @@ export default function Home() {
     }
   };
 
-  const convertIdea = async (ideaId: string, type: string) => {
+  const convertIdea = async (ideaId: string) => {
     try {
-      const res = await fetch(`${API_BASE}/workflow/artifact/${ideaId}?artifact_type=${type}`, { method: 'POST' });
+      const res = await fetch(`${API_BASE}/workflow/artifact/${ideaId}`, { method: 'POST' });
       const data = await res.json();
       const url = data.url;
 
-      // Update local state so the UI reflects the new artifact
       setIdeas(prev => prev.map(i => {
         if (i.id === ideaId) {
-          const updatedArtifacts = { ...i.artifacts, [type]: url };
-          return { ...i, artifacts: updatedArtifacts };
+          return { ...i, artifacts: { ...i.artifacts, pdf: url } };
         }
         return i;
       }));
-
-      // Artifact URL handled inside card via status update or just alert
-      // alert(`Artifact Generated: ${url}`);
     } catch (e) {
       console.error(e);
     }
@@ -165,7 +160,7 @@ export default function Home() {
             <div className={`step ${stage === 'seeds' ? 'active' : ''}`}>1. Seed Generation</div>
             <div className={`step ${ideas.some(i => i.status === 'refined') ? 'active' : ''}`}>2. Refinement</div>
             <div className={`step ${ideas.some(i => i.status === 'evaluated') ? 'active' : ''}`}>3. Evaluation</div>
-            <div className={`step ${ideas.some(i => i.artifacts && Object.keys(i.artifacts).length > 0) ? 'active' : ''}`}>4. Artifacts</div>
+            <div className={`step ${ideas.some(i => i.artifacts && Object.keys(i.artifacts).length > 0) ? 'active' : ''}`}>4. PDF Export</div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">

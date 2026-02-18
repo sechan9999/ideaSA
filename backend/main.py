@@ -139,9 +139,9 @@ async def evaluate_idea(idea_id: str):
     return evaluated_idea
 
 @app.post("/workflow/artifact/{idea_id}")
-async def generate_artifact(idea_id: str, artifact_type: str = "pdf"):
+async def generate_artifact(idea_id: str):
     """
-    Step 5: Generate PDF/Video
+    Step 5: Generate PDF Proposal
     """
     global IDEAS_DB
     if idea_id not in IDEAS_DB:
@@ -150,13 +150,9 @@ async def generate_artifact(idea_id: str, artifact_type: str = "pdf"):
             raise HTTPException(status_code=404, detail="Idea not found")
 
     idea = IDEAS_DB[idea_id]
-    url = await artifact_agent.generate(idea, artifact_type)
-    
-    if artifact_type == "pdf":
-        idea.artifacts["pdf"] = url
-    elif artifact_type == "video":
-        idea.artifacts["video"] = url
-        
+    url = await artifact_agent.generate(idea, "pdf")
+    idea.artifacts["pdf"] = url
+
     IDEAS_DB[idea_id] = idea
     db_service.save_ideas(IDEAS_DB)
     return {"url": url}

@@ -23,17 +23,12 @@ class SeedAgent:
         # For now, rely on LLMService returning mock/structured data
         raw_ideas = await self.llm.generate_json(prompt)
         
-        # Hardcoded fallback for demo robustness if LLM service mock matches poorly
         if not isinstance(raw_ideas, list) or not raw_ideas:
             print(f"DEBUG: raw_ideas was {raw_ideas} (type: {type(raw_ideas)})")
-            # Force good seeds for demo
-            raw_ideas = [
-                {"title": "Autonomous Drone Hubs", "description": "A network of charging and maintenance hubs for last-mile drone delivery.", "keywords": ["logistics", "automation"]},
-                {"title": "Noise-Canceling Propellers", "description": "Advanced propeller design to reduce noise pollution in urban drone delivery.", "keywords": ["hardware", "noise-reduction"]},
-                {"title": "AI Air Traffic Control", "description": "Decentralized AI system for managing low-altitude drone traffic.", "keywords": ["software", "ai"]},
-                {"title": "Drone-as-a-Service Platform", "description": "Uber-like platform for renting drone fleets for bespoke delivery needs.", "keywords": ["platform", "sharing-economy"]},
-                {"title": "Secure Payload Lockers", "description": "Smart IoT lockers that authenticate drones for secure package handoff.", "keywords": ["iot", "security"]}
-            ][:count]
+            # Re-request with explicit seed keyword to hit the right mock branch
+            raw_ideas = await self.llm.generate_json(f"Generate seed ideas for: {context.get('topic', 'innovation')}")
+            if not isinstance(raw_ideas, list):
+                raw_ideas = [{"title": f"{context.get('topic', 'Innovation')} Concept", "description": "A new approach worth exploring.", "keywords": ["concept"]}]
 
         # Force conversion to Idea objects
         seeds = []
